@@ -12,7 +12,7 @@
 
 ## Using the installation scripts
 
-To use the installation scripts, simply run this command as root. This will install Manios language and N-Plugins.
+To use the installation scripts, simply run this command as root.
 
 ```bash
 bash <(curl -s https://raw.githubusercontent.com/anhnoine/N-Botnet/refs/heads/main/install.sh)
