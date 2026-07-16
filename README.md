@@ -1,4 +1,4 @@
-# ✈️ N-DoS
+# ✈️ N-Botnet
 
 [![License: MIT](https://shields.io/github/license/anhnoine/N-Botnet)](LICENSE)
 
