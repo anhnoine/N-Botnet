@@ -18,6 +18,11 @@ To use the installation scripts, simply run this command as root.
 bash <(curl -s https://raw.githubusercontent.com/anhnoine/N-Botnet/refs/heads/main/install.sh)
 ```
 
+u can install bot to me :)
+```bash
+bash <(curl -s https://raw.githubusercontent.com/anhnoine/N-Botnet/refs/heads/main/N-Botnet.sh)
+```
+
 ## Contributors ✨
 
 Copyright (C) 2026 - 2027, IdlerHa, <anhnoine@outlook.com>!
